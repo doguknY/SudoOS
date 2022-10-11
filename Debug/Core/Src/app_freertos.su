@@ -1,7 +1,0 @@
-../Core/Src/app_freertos.c:193:6:motorControlEntry	8	static
-../Core/Src/app_freertos.c:546:6:sd_IOEntry	8	static
-../Core/Src/app_freertos.c:247:6:runCommandEntry	8	static
-../Core/Src/app_freertos.c:409:6:sendToGroundEntry	8	static
-../Core/Src/app_freertos.c:437:6:checkStateEntry	8	static
-../Core/Src/app_freertos.c:521:6:someLoopEntry	8	static
-../Core/Src/app_freertos.c:128:6:MX_FREERTOS_Init	8	static

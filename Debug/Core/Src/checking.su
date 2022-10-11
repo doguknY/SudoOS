@@ -1,0 +1,6 @@
+../Core/Src/checking.c:4:9:checkLiftoff	0	static
+../Core/Src/checking.c:11:9:checkApogee	0	static
+../Core/Src/checking.c:19:9:checkSeparationAltitude	0	static
+../Core/Src/checking.c:26:9:checkSteadyAltitude	0	static
+../Core/Src/checking.c:32:9:checkBeforeLanding	0	static
+../Core/Src/checking.c:39:9:checkLanding	0	static

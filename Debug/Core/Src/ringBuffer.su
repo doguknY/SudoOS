@@ -1,0 +1,9 @@
+../Core/Inc/ringBuffer.h:110:16:ring_buffer_is_empty	0	static
+../Core/Inc/ringBuffer.h:119:16:ring_buffer_is_full	0	static
+../Core/Inc/ringBuffer.h:128:27:ring_buffer_num_items	0	static
+../Core/Src/ringBuffer.c:8:6:ring_buffer_init	0	static
+../Core/Src/ringBuffer.c:13:6:ring_buffer_queue	0	static
+../Core/Src/ringBuffer.c:26:6:ring_buffer_queue_arr	24	static
+../Core/Src/ringBuffer.c:34:9:ring_buffer_dequeue	0	static
+../Core/Src/ringBuffer.c:45:20:ring_buffer_dequeue_arr	24	static
+../Core/Src/ringBuffer.c:60:9:ring_buffer_peek	0	static

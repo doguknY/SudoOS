@@ -17,3 +17,5 @@ SUDO is our STM32-based main flight control computer in the Model Satellite Syst
 - Controlling the servo that provides separation in the model satellite system and the quad brushless motor with ESC connection, which provides controlled descent, with Timer PWM with high sampling. Besides using PWM, motor control has a PID control algorithm architecture. The used algorithm is used to stabilize the satellite according to the angle data. The gain values of the PID algorithm can be changed remotely.
 
 - Data logging using SD card in STM32. For more detailed usage of SD card like file transfer, you can refer to our file transfer project.
+
+![SUDO](https://i.hizliresim.com/nlzlmui.jpg)

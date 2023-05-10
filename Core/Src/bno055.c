@@ -20,6 +20,10 @@ const uint8_t AccelRange = AFS_16G;
 const uint8_t AccelMode = NormalA;
 const uint8_t AccelBandwith = ABW_1000Hz;
 
+const uint8_t MagRate = MODR_30Hz;
+const uint8_t MagOperMode = EnhancedRegular;
+const uint8_t MagPwrMode = Normal;
+
 // pg21
 const uint8_t PWRMode = Normalpwr;
 const uint8_t OPRMode = AMG;
@@ -62,6 +66,10 @@ void _config(void) {
 
     uint8_t gyroConf2 = GyroPowerMode << 0;
     bno055_iic_write_byte(BNO055_GYRO_CONFIG_1, gyroConf2);
+    HAL_Delay(30);
+
+    uint8_t magConf = (MagRate << 0) | (MagOperMode << 3) | (MagPwrMode << 5);
+    bno055_iic_write_byte(BNO055_MAG_CONFIG, magConf);
     HAL_Delay(30);
 
     _setPage(0);

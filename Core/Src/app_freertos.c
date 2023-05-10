@@ -40,6 +40,8 @@ uint8_t stringWithAllData[169];
 float_to_u8 converter32;
 float mag[3];
 float prevMag[3];
+
+void quaternionToEuler(float *q, float *euler);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -392,13 +394,13 @@ void runCommandEntry(void *argument) {
 /* USER CODE END Header_sendToGroundEntry */
 void sendToGroundEntry(void *argument) {
     /* USER CODE BEGIN sendToGroundEntry */
-    initSD();
+    // initSD();
 
     /* Infinite loop */
     for (;;) {
         loraRecevice();
         createFullPacket();
-        writeSD(telemetryStrPacket);
+        // writeSD(telemetryStrPacket);
 
         loraTransmit(transmitPacket, sizeof(transmitPacket));
 
@@ -519,7 +521,6 @@ char uart_tx_buffer[150];
  * @param argument: Not used
  * @retval None
  */
-
 /* USER CODE END Header_sd_IOEntry */
 void sd_IOEntry(void *argument) {
     /* USER CODE BEGIN sd_IOEntry */
@@ -564,36 +565,14 @@ void sd_IOEntry(void *argument) {
                              gyro.y * DEG2RAD, gyro.z * DEG2RAD, accel.x,
                              accel.y, accel.z, mag[0], mag[1], mag[2]);
         madgwick_get_quaternion(madgwick_handle, &quat_data);
-        angle.roll = 180.0 / PI *
-                     atan2(2 * (quat_data.q0 * quat_data.q1 +
-                                quat_data.q2 * quat_data.q3),
-                           1 - 2 * (quat_data.q1 * quat_data.q1 +
-                                    quat_data.q2 * quat_data.q2));
-        angle.pitch = 180.0 / PI *
-                      asin(2 * (quat_data.q0 * quat_data.q2 -
-                                quat_data.q3 * quat_data.q1));
 
-        // yaw = atan2(2*(qyqz + qxqw), qx^2 - qy^2 - qz^2 + qw^2)
-        // angle.yaw = atan2(
-        //     2 * (quat_data.q3 + quat_data.q0),
-        //     (quat_data.q1 * quat_data.q1) - (quat_data.q2 * quat_data.q2) -
-        //         (quat_data.q3 * quat_data.q3) + (quat_data.q0 * quat_data.q0));
-
-        angle.yaw =
-            180.0 / PI *
-            atan2f(quat_data.q0 * quat_data.q3 + quat_data.q1 *
-            quat_data.q2,
-                   0.5f - quat_data.q2 * quat_data.q2 -
-                       quat_data.q3 * quat_data.q3);
-
-        // sprintf((char *)uart_tx_buffer,
-        //         "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\r\n",
-        //         id, accel.x, accel.y, accel.z, gyro.x, gyro.y, gyro.z,
-        //         mag[0], mag[1], mag[2], angle.roll, angle.pitch,
-        //         angle.yaw, quat_data.q0, quat_data.q1, quat_data.q2,
-        //         quat_data.q3);
-        // HAL_UART_Transmit(&huart2, uart_tx_buffer,
-        // strlen(uart_tx_buffer), 100);
+        float euler[3];
+        float q[4];
+        q[0] = quat_data.q0;
+        q[1] = quat_data.q1;
+        q[2] = quat_data.q2;
+        q[3] = quat_data.q3;
+        quaternionToEuler(q, euler);
 
         osDelay(10);
     }
@@ -602,5 +581,28 @@ void sd_IOEntry(void *argument) {
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+void quaternionToEuler(float *q, float *euler) {
+    float sinr_cosp = 2 * (q[0] * q[1] + q[2] * q[3]);
+    float cosr_cosp = 1 - 2 * (q[1] * q[1] + q[2] * q[2]);
+    euler[0] = atan2(sinr_cosp, cosr_cosp);
+    euler[0] = euler[0] * 180 / M_PI;
 
+    float sinp = 2 * (q[0] * q[2] - q[3] * q[1]);
+    if (fabs(sinp) >= 1)
+        euler[1] =
+            copysign(M_PI / 2, sinp); /* use 90 degrees if out of range */
+    else
+        euler[1] = asin(sinp);
+    euler[1] = euler[1] * 180 / M_PI;
+
+    float siny_cosp = 2 * (q[0] * q[3] + q[1] * q[2]);
+    float cosy_cosp = 1 - 2 * (q[2] * q[2] + q[3] * q[3]);
+    euler[2] = atan2(siny_cosp, cosy_cosp);
+
+    // yaw 0-360
+    if (euler[2] < 0) {
+        euler[2] += 2 * M_PI;
+    }
+    euler[2] = euler[2] * 180 / M_PI;
+}
 /* USER CODE END Application */

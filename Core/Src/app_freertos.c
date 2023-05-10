@@ -605,4 +605,10 @@ void quaternionToEuler(float *q, float *euler) {
     }
     euler[2] = euler[2] * 180 / M_PI;
 }
+
+void quaternionToEuler2(float *q, float *euler) {
+    roll = asinf(-2.0f * (q[1] * q[3] - q[0] * q[2]));
+    pitch = atan2f(q[0] * q[1] + q[2] * q[3], 0.5f - q[1] * q[1] - q[2] * q[2]);
+    yaw = atan2f(q[1] * q[2] + q[0] * q[3], 0.5f - q[2] * q[2] - q[3] * q[3]);
+}
 /* USER CODE END Application */

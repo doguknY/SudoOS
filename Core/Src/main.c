@@ -1,31 +1,32 @@
 /* USER CODE BEGIN Header */
 
 /*
-	    YILDIZ ROCKET TEAM
+            YILDIZ ROCKET TEAM
   SUDO Main Flight Control Computer
 
-	Dogukan Yalcin
+        Dogukan Yalcin
   Tolga Engin
 */
 
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+
 #include "adc.h"
 #include "app_fatfs.h"
+#include "cmsis_os.h"
+#include "gpio.h"
 #include "i2c.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
-#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "control.h"
+#include "gps.h"
 #include "string.h"
 #include "system.h"
-#include "gps.h"
-#include "control.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,21 +54,16 @@ void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
-void HAL_I2C_MemRxCpltCallback (I2C_HandleTypeDef * hi2c)
-{
-  if(hi2c->Instance == hi2c2.Instance)
-  {
-    /* BNO IT*/
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c->Instance == hi2c2.Instance) {
+        /* BNO IT*/
 
-    readIMU(); 
-  }
-  else if (hi2c->Instance == hi2c3.Instance)
-  {
-    /* BME IT*/
+        //  readIMU();
+    } else if (hi2c->Instance == hi2c3.Instance) {
+        /* BME IT*/
 
-    readAltitude();
-  }
-
+        readAltitude();
+    }
 }
 
 uint8_t received_uart_byte;
@@ -75,60 +71,53 @@ uint8_t jei_receive_buffer[42];
 uint8_t jei_receive_index = 0;
 uint8_t jei_receive_flag = 0;
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-  if(huart->Instance == huart1.Instance)
-  {
-    /*  JEI IT */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    if (huart->Instance == huart1.Instance) {
+        /*  JEI IT */
 
-    if (received_uart_byte == 'J') {
-      jei_receive_flag = 1;
+        if (received_uart_byte == 'J') {
+            jei_receive_flag = 1;
+        }
+
+        if (jei_receive_flag) {
+            if (jei_receive_index < sizeof(jei_receive_buffer))
+                jei_receive_buffer[jei_receive_index++] = received_uart_byte;
+
+            if (received_uart_byte == 'T') {
+                sscanf(jei_receive_buffer, "J, %f, %f, %f, %f, %f, T",
+                       &jei.pressure, &jei.altitude, &jei.gpsAltitude,
+                       &jei.latitude, &jei.longtitude);
+                // memset(jei_receive_buffer, 0, sizeof(jei_receive_buffer));
+                jei_receive_index = 0;
+                jei_receive_flag = 0;
+            }
+        }
+
+        HAL_UART_Receive_IT(&huart1, &received_uart_byte, 1);
+
+    } else if (huart->Instance == huart3.Instance) {
+        /* GPS IT */
+
+        GPS_CallBack();
+    } else if (huart->Instance == huart2.Instance) {
+        /* LENNA IT */
+        lenna.tranmissionPercentage = received_uart_byte;
+        HAL_UART_Receive_IT(&huart2, &received_uart_byte, 1);
     }
-
-    if (jei_receive_flag) {
-
-      if (jei_receive_index < sizeof(jei_receive_buffer))
-        jei_receive_buffer[jei_receive_index++] = received_uart_byte;
-      
-      if (received_uart_byte == 'T') {
-        sscanf(jei_receive_buffer, "J, %f, %f, %f, %f, %f, T", &jei.pressure, &jei.altitude, &jei.gpsAltitude, &jei.latitude, &jei.longtitude);
-        // memset(jei_receive_buffer, 0, sizeof(jei_receive_buffer));
-        jei_receive_index = 0;
-        jei_receive_flag = 0;
-      }
-    }
-    
-    HAL_UART_Receive_IT(&huart1, &received_uart_byte, 1);
-    
-  }
-  else if(huart->Instance == huart3.Instance)
-  {
-    /* GPS IT */
-
-    GPS_CallBack();
-  }
-  else if (huart->Instance == huart2.Instance)
-  {
-    /* LENNA IT */
-    lenna.tranmissionPercentage = received_uart_byte;
-    HAL_UART_Receive_IT(&huart2, &received_uart_byte, 1);
-  }
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-  if(GPIO_Pin == SPI1_DIO0_Pin ){
-    /* LoRA EXTI */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+    if (GPIO_Pin == SPI1_DIO0_Pin) {
+        /* LoRA EXTI */
 
-    // loraRecevice();
-  }
+        // loraRecevice();
+    }
 
-  else if (GPIO_Pin == BUTTON_Pin)
-  {
-    /* Button EXTI */
+    else if (GPIO_Pin == BUTTON_Pin) {
+        /* Button EXTI */
 
-    // HAL_GPIO_TogglePin(BUZZER_GPIO_Port, BUZZER_Pin);
-  }
+        // HAL_GPIO_TogglePin(BUZZER_GPIO_Port, BUZZER_Pin);
+    }
 }
 /* USER CODE END PFP */
 
@@ -138,201 +127,194 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
+    /* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
+    /* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+    /* MCU
+     * Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    /* Reset of all peripherals, Initializes the Flash interface and the
+     * Systick. */
+    HAL_Init();
 
-  /* USER CODE BEGIN Init */
+    /* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+    /* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+    /* Configure the system clock */
+    SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+    /* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+    /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_ADC1_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
-  MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
-  MX_I2C2_Init();
-  MX_I2C3_Init();
-  MX_SPI1_Init();
-  MX_SPI2_Init();
-  if (MX_FATFS_Init() != APP_OK) {
-    Error_Handler();
-  }
-  MX_USART3_UART_Init();
-  /* USER CODE BEGIN 2 */
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_ADC1_Init();
+    MX_TIM2_Init();
+    MX_TIM3_Init();
+    MX_USART1_UART_Init();
+    MX_USART2_UART_Init();
+    MX_I2C2_Init();
+    MX_I2C3_Init();
+    MX_SPI1_Init();
+    MX_SPI2_Init();
+    if (MX_FATFS_Init() != APP_OK) {
+        Error_Handler();
+    }
+    MX_USART3_UART_Init();
+    /* USER CODE BEGIN 2 */
 
-  openingThemeSong(10);
+    openingThemeSong(10);
 
-  init_servo();
-  init_esc();
-  // calibrate_esc();
-  init_control();
-  
-  initIMU();
-  initGPS();
-  initBarometer();
-  initLoRa();
-  GPS_Init();
+    init_servo();
+    init_esc();
+    // calibrate_esc();
+    init_control();
 
-  HAL_UART_Receive_IT(&huart1, &received_uart_byte, 1);
-  HAL_UART_Receive_IT(&huart2, &received_uart_byte, 1);
-  
-  led(1);
-  openingThemeSong(500);
+    initIMU();
+    initGPS();
+    initBarometer();
+    initLoRa();
+    GPS_Init();
 
-  /* USER CODE END 2 */
+    HAL_UART_Receive_IT(&huart1, &received_uart_byte, 1);
+    // HAL_UART_Receive_IT(&huart2, &received_uart_byte, 1);
 
-  /* Init scheduler */
-  osKernelInitialize();  /* Call init function for freertos objects (in freertos.c) */
-  MX_FREERTOS_Init();
+    led(1);
+    openingThemeSong(500);
 
-  /* Start scheduler */
-  osKernelStart();
+    /* USER CODE END 2 */
 
-  /* We should never get here as control is now taken by the scheduler */
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
+    /* Init scheduler */
+    osKernelInitialize(); /* Call init function for freertos objects (in
+                             freertos.c) */
+    MX_FREERTOS_Init();
 
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+    /* Start scheduler */
+    osKernelStart();
+
+    /* We should never get here as control is now taken by the scheduler */
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
+    while (1) {
+        /* USER CODE END WHILE */
+
+        /* USER CODE BEGIN 3 */
+    }
+    /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
+    /** Configure the main internal regulator output voltage
+     */
+    HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV4;
-  RCC_OscInitStruct.PLL.PLLN = 85;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    /** Initializes the RCC Oscillators according to the specified parameters
+     * in the RCC_OscInitTypeDef structure.
+     */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+    RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV4;
+    RCC_OscInitStruct.PLL.PLLN = 85;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+    RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+        Error_Handler();
+    }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    /** Initializes the CPU, AHB and APB buses clocks
+     */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK |
+                                  RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK) {
+        Error_Handler();
+    }
 }
 
 /* USER CODE BEGIN 4 */
 volatile uint8_t FatFsCnt = 0;
 volatile uint16_t Timer1, Timer2;
 
-void SDTimer_Handler(void)
-{
-  if(Timer1 > 0)
-    Timer1--;
+void SDTimer_Handler(void) {
+    if (Timer1 > 0) Timer1--;
 
-  if(Timer2 > 0)
-    Timer2--;
+    if (Timer2 > 0) Timer2--;
 }
 
 /* USER CODE END 4 */
 
 /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM6 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM6 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    /* USER CODE BEGIN Callback 0 */
 
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM6) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-  if (htim->Instance == TIM6) {
-      readTime();
+    /* USER CODE END Callback 0 */
+    if (htim->Instance == TIM6) {
+        HAL_IncTick();
     }
-  /* USER CODE END Callback 1 */
+    /* USER CODE BEGIN Callback 1 */
+    if (htim->Instance == TIM6) {
+        readTime();
+    }
+    /* USER CODE END Callback 1 */
 }
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-	  led(0);
-  }
-  /* USER CODE END Error_Handler_Debug */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
+    /* USER CODE BEGIN Error_Handler_Debug */
+    /* User can add his own implementation to report the HAL error return state
+     */
+    __disable_irq();
+    while (1) {
+        led(0);
+    }
+    /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
+void assert_failed(uint8_t *file, uint32_t line) {
+    /* USER CODE BEGIN 6 */
+    /* User can add his own implementation to report the file name and line
+       number, ex: printf("Wrong parameters value: file %s on line %d\r\n",
+       file, line) */
+    /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

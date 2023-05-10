@@ -35,6 +35,7 @@ extern Lenna lenna;
 
 
 extern uint8_t groundTransmitPacket[73];
+extern uint8_t transmitPacket[24];
 extern uint8_t loraReceiveBuffer[8];
 extern uint8_t lennaReceiveBuffer[4];
 extern char telemetryStrPacket[200];
@@ -65,6 +66,7 @@ float getVoltage();
 void loraRecevice();
 
 void loraTransmit(uint8_t* data, uint16_t size);
+int createFullPacket();
 void readGPS();
 
 void offsetIMU();

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "bno055.h": "c",
+        "madgwick.h": "c",
+        "crc.h": "c"
+    }
+}
